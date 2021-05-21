@@ -61,14 +61,13 @@
     //手势触摸滑动
     _wkWebView.allowsBackForwardNavigationGestures = YES;
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://www.fordeal.com"]
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://www.baidu.com"]
                                          cachePolicy:NSURLRequestUseProtocolCachePolicy
                                                        timeoutInterval:60.0];
     [request setHTTPMethod:@"POST"];
     NSString *postString = @"company=Locassa&quality=AWESOME!";
     [request setHTTPBody:[postString dataUsingEncoding:NSUTF8StringEncoding]];
 
-//    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.fordeal.com/"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:15];
     [_wkWebView loadRequest:request];
     
     [self.view addSubview:_wkWebView];
@@ -89,15 +88,24 @@
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         //也可以通过解析data等数据，通过data等数据来确定是否拦截
         //一个任务完成需要返回didReceiveResponse和didReceiveData两个方法，最后在执行didFinish，不可重复调用，可能会导致崩溃
-        if (!data) {
-            [weakUrlSchemeTask didReceiveResponse:[NSURLResponse new]];
-            [weakUrlSchemeTask didReceiveData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"test1" ofType:@"jpeg"]]];
-        } else {
-            [weakUrlSchemeTask didReceiveResponse:response];
-            [weakUrlSchemeTask didReceiveData:data];
-
+        @try {
+            if ([response isKindOfClass:[NSURLResponse class]]) {
+                [weakUrlSchemeTask didReceiveResponse:response];
+            }
+            if ([data isKindOfClass:[NSData class]]) {
+                [weakUrlSchemeTask didReceiveData:data];
+            }
+            if (error) {
+                [weakUrlSchemeTask didFailWithError:error];
+            } else {
+                [weakUrlSchemeTask didFinish];
+            }
+        } @catch (NSException *exception) {
+            //report error
+            NSLog(@"%@", exception);
+        } @finally {
+            
         }
-        [weakUrlSchemeTask didFinish];
     }];
     [task resume];
 }
