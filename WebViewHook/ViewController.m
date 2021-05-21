@@ -53,7 +53,7 @@
     //处理崩溃，由于调用类方法继承不可以，可以通过分类+hook来处理(或者主动方法的hook和交换)，避免自定义拦截标准出现出现崩溃
     //标准的urlscheme是没有问题的,可以点方法进入查看参考标准，例如：www.baidu.com
     //这里可以自行创建专门处理拦截业务的代理类，将self替换之，并实现WKURLSchemeHandler协议即可
-    [wkWebConfig setURLSchemeHandler:self forURLScheme:@"www.baidu.com"];
+//    [wkWebConfig setURLSchemeHandler:self forURLScheme:@"www.baidu.com"];
     [wkWebConfig setURLSchemeHandler:self forURLScheme:@"https"];
     [wkWebConfig setURLSchemeHandler:self forURLScheme:@"http"];
     
@@ -61,7 +61,14 @@
     //手势触摸滑动
     _wkWebView.allowsBackForwardNavigationGestures = YES;
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.baidu.com/"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:15];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://www.fordeal.com"]
+                                         cachePolicy:NSURLRequestUseProtocolCachePolicy
+                                                       timeoutInterval:60.0];
+    [request setHTTPMethod:@"POST"];
+    NSString *postString = @"company=Locassa&quality=AWESOME!";
+    [request setHTTPBody:[postString dataUsingEncoding:NSUTF8StringEncoding]];
+
+//    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.fordeal.com/"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:15];
     [_wkWebView loadRequest:request];
     
     [self.view addSubview:_wkWebView];
@@ -71,25 +78,26 @@
 - (void)webView:(WKWebView *)webView startURLSchemeTask:(id <WKURLSchemeTask>)urlSchemeTask {
     NSURLRequest *request = urlSchemeTask.request;
     //可以通过url拦截响应的方法
-    if ([request.URL.absoluteString.pathExtension isEqualToString:@"png"] || [request.URL.absoluteString.pathExtension isEqualToString:@"gif"]) {
-        //一个任务完成需要返回didReceiveResponse和didReceiveData两个方法，最后在执行didFinish，不可重复调用，可能会导致崩溃
-        [urlSchemeTask didReceiveResponse:[NSURLResponse new]];
-        [urlSchemeTask didReceiveData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"test1" ofType:@"jpeg"]]];
-        [urlSchemeTask didFinish];
-        return;
-    }
+//    if ([request.URL.absoluteString.pathExtension isEqualToString:@"png"] || [request.URL.absoluteString.pathExtension isEqualToString:@"gif"]) {
+//        //一个任务完成需要返回didReceiveResponse和didReceiveData两个方法，最后在执行didFinish，不可重复调用，可能会导致崩溃
+//        [urlSchemeTask didReceiveResponse:[NSURLResponse new]];
+//        [urlSchemeTask didReceiveData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"test1" ofType:@"jpeg"]]];
+//        [urlSchemeTask didFinish];
+//        return;
+//    }
+    __weak typeof(urlSchemeTask) weakUrlSchemeTask = urlSchemeTask;
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         //也可以通过解析data等数据，通过data等数据来确定是否拦截
         //一个任务完成需要返回didReceiveResponse和didReceiveData两个方法，最后在执行didFinish，不可重复调用，可能会导致崩溃
         if (!data) {
-            [urlSchemeTask didReceiveResponse:[NSURLResponse new]];
-            [urlSchemeTask didReceiveData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"test1" ofType:@"jpeg"]]];
+            [weakUrlSchemeTask didReceiveResponse:[NSURLResponse new]];
+            [weakUrlSchemeTask didReceiveData:[NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"test1" ofType:@"jpeg"]]];
         } else {
-            [urlSchemeTask didReceiveResponse:response];
-            [urlSchemeTask didReceiveData:data];
+            [weakUrlSchemeTask didReceiveResponse:response];
+            [weakUrlSchemeTask didReceiveData:data];
 
         }
-        [urlSchemeTask didFinish];
+        [weakUrlSchemeTask didFinish];
     }];
     [task resume];
 }
